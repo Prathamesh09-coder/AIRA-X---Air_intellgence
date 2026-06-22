@@ -116,6 +116,42 @@ function SourceAttribution() {
 
   const cur = sources[selected] || sources[0];
 
+  // Resolve target hotspot coordinates dynamically for the selected source
+  const activeHotspot = useMemo(() => {
+    if (liveAttributionData && sources[selected]) {
+      const srcName = sources[selected].source;
+      if (srcName === liveAttributionData.dominantSource) {
+        return {
+          lat: liveAttributionData.hotspotLat,
+          lon: liveAttributionData.hotspotLon,
+          label: `${srcName} Hotspot`,
+          details: `Active real-time violation: ${liveAttributionData.evidenceLog}`,
+        };
+      }
+    }
+
+    const rawSrc = liveSources[selected];
+    if (rawSrc && rawSrc.evidence_lat && rawSrc.evidence_lon) {
+      return {
+        lat: rawSrc.evidence_lat,
+        lon: rawSrc.evidence_lon,
+        label: `${rawSrc.source_type} Hotspot`,
+        details: rawSrc.evidence_log,
+      };
+    }
+
+    const latOffset = (selected % 2 === 0 ? 0.011 : -0.013);
+    const lonOffset = (selected % 3 === 0 ? -0.009 : 0.013);
+    return {
+      lat: city.center[1] + latOffset,
+      lon: city.center[0] + lonOffset,
+      label: `${sources[selected]?.source || "Traffic"} Hotspot`,
+      details: sources[selected]?.evidence || "Standard sensor warning at inspection grid.",
+    };
+  }, [city, selected, sources, liveAttributionData, liveSources]);
+
+  const hotspots = useMemo(() => [activeHotspot], [activeHotspot]);
+
   // Scale map cells dynamically based on live source attribution
   const cells = useMemo(() => {
     const rawCells = generateGrid(city);
@@ -178,7 +214,7 @@ function SourceAttribution() {
             )}
           </div>
           <div className="relative h-[440px]">
-            <CityMap city={city} cells={cells} className="absolute inset-0" mode="attribution" />
+            <CityMap city={city} cells={cells} hotspots={hotspots} className="absolute inset-0" mode="attribution" />
           </div>
         </div>
 

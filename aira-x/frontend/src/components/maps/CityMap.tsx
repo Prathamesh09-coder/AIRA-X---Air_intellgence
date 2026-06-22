@@ -39,6 +39,7 @@ type Props = {
   showHeatmap?: boolean;
   showGrid?: boolean;
   mode?: "forecast" | "attribution";
+  hotspots?: Array<{ lat: number; lon: number; label: string; details?: string }>;
 };
 
 export function CityMap({ 
@@ -47,10 +48,12 @@ export function CityMap({
   className, 
   showHeatmap = true, 
   showGrid = true,
-  mode = "forecast"
+  mode = "forecast",
+  hotspots = []
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+  const markersRef = useRef<maplibregl.Marker[]>([]);
 
   useEffect(() => {
     if (!ref.current) return;
@@ -266,6 +269,74 @@ export function CityMap({
       map.once("load", updateMapData);
     }
   }, [cells, city, mode]);
+
+  // Manage hotspot markers dynamically
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const updateMarkers = () => {
+      // 1. Clear old markers
+      markersRef.current.forEach((m) => m.remove());
+      markersRef.current = [];
+
+      if (!hotspots || hotspots.length === 0) return;
+
+      // 2. Add new markers
+      hotspots.forEach((h) => {
+        const el = document.createElement("div");
+        el.className = "custom-hotspot-marker";
+        el.style.width = "18px";
+        el.style.height = "18px";
+        el.style.borderRadius = "50%";
+        el.style.backgroundColor = "rgba(239, 68, 68, 0.9)";
+        el.style.border = "2px solid #ffffff";
+        el.style.boxShadow = "0 0 10px rgba(0,0,0,0.3)";
+        el.style.cursor = "pointer";
+        el.style.display = "flex";
+        el.style.alignItems = "center";
+        el.style.justifyContent = "center";
+        el.innerHTML = `<span style="width: 6px; height: 6px; border-radius: 50%; background-color: #ffffff; display: block; animation: pulse 1.5s infinite"></span>`;
+
+        if (!document.getElementById("hotspot-pulse-style")) {
+          const style = document.createElement("style");
+          style.id = "hotspot-pulse-style";
+          style.innerHTML = `
+            @keyframes pulse {
+              0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+              70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+              100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+            }
+          `;
+          document.head.appendChild(style);
+        }
+
+        const popup = new maplibregl.Popup({ offset: 12 }).setHTML(
+          `<div style="font: 500 11px Inter, sans-serif; padding: 4px; min-width: 150px">
+            <div style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: #ef4444; margin-bottom: 2px">🎯 Target Hotspot Pin</div>
+            <div style="font-size: 12px; font-weight: 700; color: #111827">${h.label}</div>
+            <div style="margin-top: 4px; font-size: 10px; color: #4b5563; font-family: monospace; background: #f3f4f6; padding: 3px; border-radius: 3px">
+              ${h.lat.toFixed(5)}°N, ${h.lon.toFixed(5)}°E
+            </div>
+            ${h.details ? `<p style="margin-top: 6px; font-size: 9px; line-height: 1.3; color: #6b7280">${h.details}</p>` : ""}
+           </div>`
+        );
+
+        const marker = new maplibregl.Marker({ element: el })
+          .setLngLat([h.lon, h.lat])
+          .setPopup(popup)
+          .addTo(map);
+
+        markersRef.current.push(marker);
+      });
+    };
+
+    if (map.loaded()) {
+      updateMarkers();
+    } else {
+      map.once("load", updateMarkers);
+    }
+  }, [hotspots, city]);
 
   return <div ref={ref} className={className} />;
 }

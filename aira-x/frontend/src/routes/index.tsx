@@ -155,6 +155,18 @@ function CommandCenter() {
     ];
   }, [liveEnforcement]);
 
+  const hotspots = useMemo(() => {
+    if (!liveEnforcement) return [];
+    return [
+      {
+        lat: liveEnforcement.primary_hotspot.hotspot_lat,
+        lon: liveEnforcement.primary_hotspot.hotspot_lon,
+        label: `Primary Hotspot: ${liveEnforcement.primary_hotspot.source_type}`,
+        details: `Targeted inspection zone: ${liveEnforcement.inspection_target}`,
+      }
+    ];
+  }, [liveEnforcement]);
+
   const [layers, setLayers] = useState({
     heatmap: true,
     grid: true,
@@ -331,7 +343,7 @@ function CommandCenter() {
             </div>
           </div>
           <div className="relative h-[460px] overflow-hidden rounded-b-lg">
-            <CityMap city={city} cells={cells} className="absolute inset-0" showHeatmap={layers.heatmap} showGrid={layers.grid} />
+            <CityMap city={city} cells={cells} hotspots={hotspots} className="absolute inset-0" showHeatmap={layers.heatmap} showGrid={layers.grid} />
             <div className="pointer-events-none absolute bottom-3 left-3 rounded-md border border-border bg-card/95 p-2.5 text-[10px] shadow-sm backdrop-blur">
               <div className="mb-1 font-semibold uppercase tracking-wider text-muted-foreground">AQI Legend</div>
               <div className="flex items-center gap-1.5">
