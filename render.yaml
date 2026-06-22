@@ -1,0 +1,47 @@
+services:
+  # 1. FastAPI Backend API Service
+  - type: web
+    name: aira-x-api
+    runtime: docker
+    dockerfilePath: aira-x/backend_api/Dockerfile
+    dockerContext: aira-x/backend_api
+    plan: starter
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: aira-x-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: aira-x-redis
+          property: connectionString
+      # Neo4j AuraDB Configuration
+      - key: NEO4J_URI
+        value: "neo4j+s://cf9f6491.databases.neo4j.io"
+      - key: NEO4J_USER
+        value: "cf9f6491"
+      - key: NEO4J_PASSWORD
+        value: "UFdxeNHTbFBNvzLjDeWqGiyQEWUCjjdcx4wkObD4zjU"
+      - key: NEO4J_DATABASE
+        value: "cf9f6491"
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: MLFLOW_TRACKING_URI
+        value: sqlite:///mlflow.db # Use lightweight local sqlite inside API container for tracking fallback
+      - key: PORT
+        value: 8000
+
+  # 2. Redis Caching Service
+  - type: redis
+    name: aira-x-redis
+    plan: free
+    ipAllowList: [] # Private to the web service
+
+databases:
+  # 3. PostgreSQL Database with PostGIS extensions
+  - name: aira-x-db
+    plan: free
+    databaseName: aira_x
