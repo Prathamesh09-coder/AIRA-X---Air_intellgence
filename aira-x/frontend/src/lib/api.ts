@@ -7,12 +7,27 @@ import type {
 } from "@shared/types";
 
 const getApiUrl = () => {
+  let url = "";
   if (typeof window !== "undefined") {
     if ((window as any).__env__?.VITE_API_URL) {
-      return (window as any).__env__.VITE_API_URL;
+      url = (window as any).__env__.VITE_API_URL;
     }
   }
-  return import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+  if (!url) {
+    url = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+  }
+  
+  // Strip trailing slash
+  if (url.endsWith("/")) {
+    url = url.slice(0, -1);
+  }
+  
+  // Auto-append /api/v1 if not present in the URL
+  if (url && !url.endsWith("/api/v1") && !url.includes("/api/v1/")) {
+    url = `${url}/api/v1`;
+  }
+  
+  return url;
 };
 
 export const API_URL = getApiUrl();
