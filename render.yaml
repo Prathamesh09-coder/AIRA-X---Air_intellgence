@@ -5,7 +5,7 @@ services:
     runtime: docker
     dockerfilePath: aira-x/backend_api/Dockerfile
     dockerContext: aira-x/backend_api
-    plan: starter
+    plan: free
     envVars:
       - key: ENVIRONMENT
         value: production
