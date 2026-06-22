@@ -1,3 +1,4 @@
+import ssl
 from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import declarative_base
@@ -10,24 +11,25 @@ if db_url.startswith("postgresql://"):
 elif db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql+asyncpg://", 1)
 
-# asyncpg doesn't support the 'sslmode' query parameter. Parse and extract it.
+# asyncpg doesn't support the 'sslmode' query parameter. Parse and strip it.
 parsed_url = urlparse(db_url)
 query_params = dict(parse_qsl(parsed_url.query))
-sslmode = query_params.pop("sslmode", None)
-
+query_params.pop("sslmode", None)
 new_query = urlencode(query_params)
 parsed_url = parsed_url._replace(query=new_query)
 db_url = urlunparse(parsed_url)
 
-connect_args = {}
-if sslmode in ("require", "prefer", "allow", "verify-ca", "verify-full") or settings.ENVIRONMENT == "production":
-    connect_args["ssl"] = True
+# Render's free PostgreSQL uses a self-signed SSL certificate.
+# Create a permissive SSL context so asyncpg doesn't reject it.
+_ssl_context = ssl.create_default_context()
+_ssl_context.check_hostname = False
+_ssl_context.verify_mode = ssl.CERT_NONE
 
 engine = create_async_engine(
     db_url,
     echo=False,
     future=True,
-    connect_args=connect_args
+    connect_args={"ssl": _ssl_context},
 )
 
 AsyncSessionLocal = async_sessionmaker(
