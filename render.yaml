@@ -20,13 +20,13 @@ services:
           property: connectionString
       # Neo4j AuraDB Configuration
       - key: NEO4J_URI
-        value: "neo4j+s://cf9f6491.databases.neo4j.io"
+        sync: false
       - key: NEO4J_USER
-        value: "cf9f6491"
+        sync: false
       - key: NEO4J_PASSWORD
-        value: "UFdxeNHTbFBNvzLjDeWqGiyQEWUCjjdcx4wkObD4zjU"
+        sync: false
       - key: NEO4J_DATABASE
-        value: "cf9f6491"
+        sync: false
       - key: JWT_SECRET_KEY
         generateValue: true
       - key: MLFLOW_TRACKING_URI
